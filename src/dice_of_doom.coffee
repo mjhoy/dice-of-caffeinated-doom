@@ -34,4 +34,25 @@ gen_board = (n_hexes, n_players, max_dice) ->
     dice = randInt(max_dice) + 1
     [player, dice]
 
+# Return the player name for the number (0 -> a, 1 -> b, etc).
+player_letter = (num) ->
+  String.fromCharCode(num + 97)
 
+# Output an ascii representation of the board.
+draw_ascii_board = (board, board_size) ->
+  buf = []
+  for y in [0...board_size]
+    buf.push("\n")
+    do (y) ->
+      for n in [0...(board_size - y)]
+        buf.push("  ")
+    for x in [0...board_size]
+      hex = board[x + (y * board_size)]
+      buf.push(player_letter(hex[0]) + "-" + hex[1] + " ")
+  buf = buf.join("")
+
+  # Just use console.log for output now.
+  console.log(buf)
+
+# Test.
+draw_ascii_board(gen_board(4, 2, 3), 2)
