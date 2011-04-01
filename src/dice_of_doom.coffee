@@ -1,10 +1,10 @@
-# Dice of Doom
-# mjhoy | michael.john.hoy@gmail.com
 #
-# Adaptation of the implementation in *Land of Lisp*.
+# Coffeescript adaptation of the Dice of Doom implementation in *Land of Lisp*.
+#
+# mjhoy | michael.john.hoy@gmail.com
 
 
-# Use underscore.js
+# Use underscore.js.
 _ = require 'underscore'
 
 # Game parameter object.
@@ -16,7 +16,7 @@ DoD.max_dice = 3
 DoD.board_size = 2
 DoD.num_hexes = (DoD.board_size * DoD.board_size)
 
-# ## Little helper functions.
+# ## A helper function
 
 # Return a random integer between 0 and n, not inclusive.
 randInt = (n) ->
@@ -41,7 +41,7 @@ randInt = (n) ->
 
 # Generate a the board data structure.
 gen_board = () ->
-  for n in [0..DoD.num_hexes]
+  for n in [0...DoD.num_hexes]
     player = randInt(DoD.num_players)
     dice = randInt(DoD.max_dice) + 1
     [player, dice]
@@ -76,7 +76,7 @@ draw_ascii_board = (board) ->
 # player whose turn it is, the board, and an array of possible
 # moves, which themselves point to new game trees.
 
-# The function to build a tree. Coffeescript does not format nicely here...
+# The function to build a tree.
 game_tree = (board, player, spare_dice, first_move) ->
   [ 
     player
@@ -94,39 +94,44 @@ game_tree = (board, player, spare_dice, first_move) ->
     ) 
   ]
 
-# Add a "pass" move to the tree, unless it is the first move.
+# Add a "pass" move to the tree.
 add_passing_move = (board, player, spare_dice, first_move, moves) ->
   if first_move
 
-    # Return the `moves` list unchanged.
+    # If this is the first move, a pass isn't a allow. Return the `moves` list unchanged.
+    # (i.e., a "passing move" is not added to the possible moves list.)
     moves
 
   else
 
-    # Append to the `moves` list.
+    # Append a passing move to the `moves` list.
     moves.push(
 
-      # Create the "passing" move. A move is represented by an array. The
+      # Create the move. A move is represented by an array. The
       # first element is a description of the move. In the case of a pass,
       # it is an empty array.
       [ 
         []
+
         # The second element of a move is a game tree representing what happens
-        # if this move were to be 
+        # after this move.
         game_tree(
+
+          # Call the `add_new_dice` function to determine whether any reinforcements
+          # should be given to the player at the end of her turn.
           add_new_dice(
             board
             player
             (spare_dice - 1)
           )
 
-          # Next player
+          # Because this is a pass, it's the next player's turn.
           ((player + 1) % DoD.num_players)
 
-          # No spare dice.
+          # No spare dice for the new player.
           0
 
-          # It is the new player's first turn.
+          # It is the first turn now.
           true
         )
       ]
@@ -136,20 +141,27 @@ add_passing_move = (board, player, spare_dice, first_move, moves) ->
 
 # ### Attacking
 
-# Calculating attacking moves.
+# Return a list of possible attacking moves for the given board, current player, and
+# also keep track of the spare dice (since spare dice are given for capturing the
+# opponents' dice.)
 attacking_moves = (board, cur_player, spare_dice) ->
 
   # Helper functions to get the player and dice data.
   player = (pos) -> board[pos][0]
   dice   = (pos) -> board[pos][1]
 
+  # We will return the `moves` array at the end, fully populated.
   moves = []
+
+  # Loop through each possible `src` and `dst` tile: the source must
+  # be owned by `cur_player`, and the destination must not. The destination
+  # tile must also be neighboring; we ensure this with the `neighbors` function.
   for src in [0...DoD.num_hexes]
     if cur_player is player(src)
       for dst in neighbors(src)
         if (cur_player isnt player(dst)) and (dice(src) > dice(dst))
 
-          # This attack is legitimate. Create the move.
+          # This attack is legitimate for the given tile. Create the move.
           move = [
 
             # The description of an attacking move is an array which
@@ -245,6 +257,10 @@ add_new_dice = (board, player, spare_dice) ->
 # Text-based; open up stdin.
 stdin = process.openStdin()
 
+# Begin game.
+startNewGame = () ->
+  play_vs_human game_tree(gen_board(), 0, 0, true)
+
 # Start a play versus a human for game tree `tree`.
 play_vs_human = (tree) ->
   print_info tree
@@ -254,17 +270,40 @@ play_vs_human = (tree) ->
   if _.isEmpty tree[2]
     announce_winner(tree[1])
 
+    console.log("Hit any key for a new game, or control-d to stop.")
+    stdin.once 'data', (chunk) -> 
+      startNewGame()
+
   # If not, handle the tree.
   else
     handle_human(tree)
 
-# Calculate the winner[s].
+# Calculate the winner[s]. Loop through all the hexes and
+# tally up the score for each player. Return an array of
+# winners (more than one in case of a tie.)
 winners = (board) ->
-  "foo"
+  score = {}
+  for hex in board
+    player = hex[0]
+    dice = hex[1]
+    score[player] or= 0
+    score[player] += dice
+  max = _.max(score)
+  winners = _.map(
+    _.select _.keys(score), (key) ->
+      score[key] is max
+    (n) ->
+      parseInt n, 10
+  )
 
+# Announce the winner.
 announce_winner = (board) ->
-  "bar."
-
+  console.log("")
+  w = winners(board)
+  if w.length > 1
+    console.log("The game is a tie between", _.map(w, (n) -> player_letter(n)) )
+  else
+    console.log("The winner is", player_letter(w[0]))
 
 # ## Text interface
 
@@ -304,5 +343,5 @@ handle_human = (tree) ->
     play_vs_human(newTree)
 
 
-# Begin play on a 2x2 board.
-play_vs_human game_tree(gen_board(), 0, 0, true)
+# Begin!
+startNewGame()
