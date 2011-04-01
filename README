@@ -1,3 +1,14 @@
 == Dice of Doom
 
 Implementing the game from *Land of Lisp* in JS/Coffeescript/Node
+
+=== play
+
+Requires node => http://nodejs.org/
+along with the coffeescript and underscore libraries.
+
+These are easily installed with npm => http://npmjs.org/
+$ npm install coffee-script && npm install underscore
+
+then, run with the `coffee` command:
+$ coffee src/dice_of_doom.coffee
