@@ -103,30 +103,36 @@ add_passing_move = (board, player, spare_dice, first_move, moves) ->
 
   else
 
-    # Create the "passing" move. A move is represented by an array. The
-    # first element is a description of the move. In the case of a pass,
-    # it is an empty array.
-    [ 
-      []
-      # The second element of a move is a game tree representing what happens
-      # if this move were to be 
-      game_tree(
-        add_new_dice(
-          board
-          player
-          (spare_dice - 1)
+    # Append to the `moves` list.
+    moves.push(
+
+      # Create the "passing" move. A move is represented by an array. The
+      # first element is a description of the move. In the case of a pass,
+      # it is an empty array.
+      [ 
+        []
+        # The second element of a move is a game tree representing what happens
+        # if this move were to be 
+        game_tree(
+          add_new_dice(
+            board
+            player
+            (spare_dice - 1)
+          )
+
+          # Next player
+          ((player + 1) % DoD.num_players)
+
+          # No spare dice.
+          0
+
+          # It is the new player's first turn.
+          true
         )
+      ]
+    )
 
-        # Next player
-        ((player + 1) % DoD.num_players)
-
-        # No spare dice.
-        0
-
-        # It is the new player's first turn.
-        true
-      )
-    ]
+    moves
 
 # ### Attacking
 
@@ -226,20 +232,20 @@ add_new_dice = (board, player, spare_dice) ->
     cur_player = hex[0]
     cur_dice = hex[1]
     # If this square can receive dice, give one and continue on.
-    if (spare_dice > 0) and (cur_player is player) and (cur_dice < DoD.max_dice)
+    if (remaining_dice > 0) and (cur_player is player) and (cur_dice < DoD.max_dice)
       remaining_dice -= 1
       [ cur_player, cur_dice + 1 ]
     else
       hex
 
-    
 
-# console.log(game_tree([ [0, 1], [1, 1], [0, 2], [1, 1]], 0, 0, true))
-
-# Open up stdin.
-stdin = process.openStdin()
 
 # ## Playing against another human
+
+# Text-based; open up stdin.
+stdin = process.openStdin()
+
+# Start a play versus a human for game tree `tree`.
 play_vs_human = (tree) ->
   print_info tree
 
@@ -252,14 +258,21 @@ play_vs_human = (tree) ->
   else
     handle_human(tree)
 
+# Calculate the winner[s].
+winners = (board) ->
+  "foo"
+
+announce_winner = (board) ->
+  "bar."
+
+
+# ## Text interface
+
 # Print game info.
 # Remember that the `tree` data structure is [ player, board, moves ].
 print_info = (tree) ->
-  buf = ["\n"]
-  buf.push "current player = ", player_letter(tree[0])
-  console.log buf.join("")
+  console.log "current player = ", player_letter(tree[0])
   draw_ascii_board tree[1]
-
 
 # Handle input from humans
 handle_human = (tree) ->
@@ -279,22 +292,17 @@ handle_human = (tree) ->
     else
       buf.push action[0] + " -> " + action[1] + "\n"
   console.log(buf.join("") + "\n")
+
+  # Handle user input. Node requires here that `stdin` be non-blocking, so unlike the
+  # implementation in *Land of Lisp* we generate a callback function to run when the
+  # user makes a choice.
+  #
+  # TODO: error handling.
   stdin.once 'data', (chunk) -> 
     selection = parseInt chunk, 10
     newTree = moves[selection][1]
-    console.log("new tree:", newTree)
     play_vs_human(newTree)
 
-# Calculate the winner[s].
-winners = (board) ->
-  "foo"
 
-announce_winner = (board) ->
-  "bar."
-
+# Begin play on a 2x2 board.
 play_vs_human game_tree(gen_board(), 0, 0, true)
-
-# ## Playing in text
-
-# Test.
-# draw_ascii_board(gen_board(4, 2, 3), 2)
