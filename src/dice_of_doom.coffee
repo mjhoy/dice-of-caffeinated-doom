@@ -335,13 +335,17 @@ handle_human = (tree) ->
   # Handle user input. Node requires here that `stdin` be non-blocking, so unlike the
   # implementation in *Land of Lisp* we generate a callback function to run when the
   # user makes a choice.
-  #
-  # TODO: error handling.
-  stdin.once 'data', (chunk) -> 
-    selection = parseInt chunk, 10
-    newTree = moves[selection][1]
-    play_vs_human(newTree)
+  do () ->
+    handleChunk = (chunk) ->
+      selection = parseInt chunk, 10
+      if (moves[selection])
+        newTree = moves[selection][1]
+        play_vs_human(newTree)
+      else
+        console.log("unknown command.")
+        stdin.once 'data', handleChunk
 
+    stdin.once 'data', handleChunk
 
 # Begin!
 startNewGame()
