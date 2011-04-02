@@ -259,7 +259,7 @@ stdin = process.openStdin()
 
 # Begin game.
 startNewGame = () ->
-  play_vs_human game_tree(gen_board(), 0, 0, true)
+  play_vs_computer game_tree(gen_board(), 0, 0, true)
 
 # Start a play versus a human for game tree `tree`.
 play_vs_human = (tree) ->
@@ -276,7 +276,7 @@ play_vs_human = (tree) ->
 
   # If not, handle the tree.
   else
-    handle_human(tree)
+    handle_human(tree, play_vs_human)
 
 # Calculate the winner[s]. Loop through all the hexes and
 # tally up the score for each player. Return an array of
@@ -313,8 +313,9 @@ print_info = (tree) ->
   console.log "current player = ", player_letter(tree[0])
   draw_ascii_board tree[1]
 
-# Handle input from humans
-handle_human = (tree) ->
+# Handle input from humans. The callback is called after the user
+# has made a choice.
+handle_human = (tree, callback) ->
   console.log("")
   console.log("choose your move:")
   buf = ["\n"]
@@ -340,12 +341,66 @@ handle_human = (tree) ->
       selection = parseInt chunk, 10
       if (moves[selection])
         newTree = moves[selection][1]
-        play_vs_human(newTree)
+        callback(newTree)
       else
         console.log("unknown command.")
         stdin.once 'data', handleChunk
 
     stdin.once 'data', handleChunk
+
+# ## Computer AI
+
+# Rate the position for a player and a given tree.
+rate_position = (tree, player) ->
+  moves = tree[2]
+  if moves
+
+    # Basic minimax algorithm; the position is the
+    # *low* score if this is the opponent's turn.
+    if (tree[0] == player)
+      _.max get_ratings(tree, player)
+    else
+      _.min get_ratings(tree, player)
+
+  # No moves remain: calculate the winners.
+  else
+    w = winners(tree[1])
+    if _.include w, player
+
+      # Only score 0.5 if it's a tie with another player, etc.
+      1 / w.length
+    else
+      0
+
+get_ratings = (tree, player) ->
+  _.map tree[2], (move) ->
+    rate_position move[1], player
+
+# ### Handle the computer game loop
+
+# Returns the tree of the move that the computer decides.
+handle_computer = (tree) ->
+  player = tree[0]
+  ratings = get_ratings tree, player
+  move = tree[2][ratings.indexOf(_.max ratings)]
+  move[1]
+
+play_vs_computer = (tree) ->
+  print_info tree
+  if _.isEmpty tree[2]
+    announce_winner(tree[1])
+
+    console.log("Hit any key for a new game, or control-d to stop.")
+    stdin.once 'data', (chunk) -> 
+      startNewGame()
+
+  # If not, handle the tree.
+  else
+    if (tree[0] == 0)
+      handle_human(tree, play_vs_computer)
+    else
+      play_vs_computer handle_computer(tree)
+
 
 # Begin!
 startNewGame()
