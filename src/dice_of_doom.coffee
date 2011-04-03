@@ -7,6 +7,13 @@
 # Use underscore.js.
 _ = require 'underscore'
 
+# Lazy evaluation functions.
+{ lazy: lazy, force: force } = require './lazy'
+
+# All `moves` will be lazy, thus a helper function to get them.
+get_moves = (tree) ->
+  force tree[2]
+
 # Game parameter object.
 DoD = {} unless DoD?
 
@@ -81,17 +88,20 @@ game_tree = (board, player, spare_dice, first_move) ->
   [ 
     player
     board
-    add_passing_move( 
-      board 
-      player 
-      spare_dice 
-      first_move 
-      attacking_moves( 
+
+    # The `moves` array is evaluated lazily.
+    lazy () -> 
+      add_passing_move( 
         board 
         player 
-        spare_dice
-      )
-    ) 
+        spare_dice 
+        first_move 
+        attacking_moves( 
+          board 
+          player 
+          spare_dice
+        )
+      ) 
   ]
 
 # Add a "pass" move to the tree.
@@ -267,7 +277,7 @@ play_vs_human = (tree) ->
 
   # The third "slot" in a tree structure is a list of available
   # moves. If there are none left, someone is a winner.
-  if _.isEmpty tree[2]
+  if _.isEmpty get_moves(tree)
     announce_winner(tree[1])
 
     console.log("Hit any key for a new game, or control-d to stop.")
@@ -319,7 +329,7 @@ handle_human = (tree, callback) ->
   console.log("")
   console.log("choose your move:")
   buf = ["\n"]
-  moves = tree[2]
+  moves = get_moves(tree)
   for n, move of moves
 
     # The first element of a `move` is a description of the action.
@@ -352,7 +362,7 @@ handle_human = (tree, callback) ->
 
 # Rate the position for a player and a given tree.
 rate_position = (tree, player) ->
-  moves = tree[2]
+  moves = get_moves(tree)
   if moves
 
     # Basic minimax algorithm; the position is the
@@ -373,7 +383,7 @@ rate_position = (tree, player) ->
       0
 
 get_ratings = (tree, player) ->
-  _.map tree[2], (move) ->
+  _.map get_moves(tree), (move) ->
     rate_position move[1], player
 
 # ### Handle the computer game loop
@@ -382,12 +392,12 @@ get_ratings = (tree, player) ->
 handle_computer = (tree) ->
   player = tree[0]
   ratings = get_ratings tree, player
-  move = tree[2][ratings.indexOf(_.max ratings)]
+  move = get_moves(tree)[ratings.indexOf(_.max ratings)]
   move[1]
 
 play_vs_computer = (tree) ->
   print_info tree
-  if _.isEmpty tree[2]
+  if _.isEmpty get_moves(tree)
     announce_winner(tree[1])
 
     console.log("Hit any key for a new game, or control-d to stop.")
