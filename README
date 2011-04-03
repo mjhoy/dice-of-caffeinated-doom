@@ -13,11 +13,18 @@ $ npm install coffee-script && npm install underscore
 then, run with the `coffee` command:
 $ coffee src/dice_of_doom.coffee
 
-=== todo
+=== next
 
-So far I've just implemented human vs. human play. I'm
-essentially following along in order of the *Land of Lisp*
-chapters.
+Serve up over a node HTTP server.
 
-Next is the basic computer AI. Then lazy evaluation. 
-Then make it interface over HTTP and serve up HTML and SVG.
+=== history 
+
+v0.0.1
+Basic human vs. human play.
+
+v0.0.2
+Basic computer AI.
+
+v0.0.3
+Lazy evaluation of game trees. Basic heuristics for AI game
+board rating.
