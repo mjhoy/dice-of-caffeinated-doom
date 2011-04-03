@@ -10,9 +10,12 @@ _ = require 'underscore'
 # Lazy evaluation functions.
 { lazy: lazy, force: force } = require './lazy'
 
-# All `moves` will be lazy, thus a helper function to get them.
+# The moves in a tree may be lazily evaluated; force in this case.
 get_moves = (tree) ->
-  force tree[2]
+  if _.isFunction tree[2]
+    force tree[2]
+  else
+    tree[2] || []
 
 # Game parameter object.
 DoD = {} unless DoD?
@@ -20,8 +23,9 @@ DoD = {} unless DoD?
 # Define some initial parameters.
 DoD.num_players = 2
 DoD.max_dice = 3
-DoD.board_size = 2
+DoD.board_size = 3
 DoD.num_hexes = (DoD.board_size * DoD.board_size)
+DoD.ai_level = 4
 
 # ## A helper function
 
@@ -363,7 +367,7 @@ handle_human = (tree, callback) ->
 # Rate the position for a player and a given tree.
 rate_position = (tree, player) ->
   moves = get_moves(tree)
-  if moves
+  if moves and (not _.isEmpty(moves))
 
     # Basic minimax algorithm; the position is the
     # *low* score if this is the opponent's turn.
@@ -374,24 +378,72 @@ rate_position = (tree, player) ->
 
   # No moves remain: calculate the winners.
   else
-    w = winners(tree[1])
-    if _.include w, player
-
-      # Only score 0.5 if it's a tie with another player, etc.
-      1 / w.length
-    else
-      0
+    score_board tree[1], player
 
 get_ratings = (tree, player) ->
   _.map get_moves(tree), (move) ->
     rate_position move[1], player
+
+# To handle larger game boards, we need to limit how far ahead the
+# computer looks. Then the "unseen" nodes will not need to be
+# evaluated, due to the lazily evaluated game tree.
+limit_tree_depth = (tree, depth) ->
+  [
+    tree[0]
+    tree[1]
+    do () ->
+      if depth is 0
+        []
+      else
+        _.map get_moves(tree), (move) ->
+          [
+            move[0]
+            limit_tree_depth move[1], (depth - 1)
+          ]
+  ]
+
+# Because we limit the game tree for the computer, the leaf nodes are
+# not *really* leaf nodes in the game, so we need a better way of rating
+# it.
+score_board = (board, player) ->
+  _.reduce( 
+    board
+    (memo, hex, pos) ->
+      v =
+        if hex[0] is player
+          if threatened pos, board
+
+            # Player-owned hex is threatened.
+            1
+          else
+
+            # Player-owned hex is unthreatened.
+            2
+        else
+
+          # Opponent-owned hex.
+          -1
+      memo + v
+    0
+  )
+
+# Is `pos` a threatened hex?
+threatened = (pos, board) ->
+  hex = board[pos]
+  player = hex[0]
+  dice = hex[1]
+  _.any neighbors(pos), (n) ->
+    nhex = board[n]
+    nplayer = nhex[0]
+    ndice = nhex[1]
+    (nplayer isnt player) and (ndice > dice)
 
 # ### Handle the computer game loop
 
 # Returns the tree of the move that the computer decides.
 handle_computer = (tree) ->
   player = tree[0]
-  ratings = get_ratings tree, player
+  ratings = get_ratings limit_tree_depth(tree, DoD.ai_level), player
   move = get_moves(tree)[ratings.indexOf(_.max ratings)]
   move[1]
 
