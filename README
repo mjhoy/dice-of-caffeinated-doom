@@ -2,23 +2,32 @@
 
 Implementing the game from *Land of Lisp* in JS/Coffeescript/Node
 
-=== play
+=== install
 
 Requires node => http://nodejs.org/
-along with the coffeescript and underscore libraries.
+and the following libraries:
+  coffee-script
+  underscore
+  socket.io
 
 These are easily installed with npm => http://npmjs.org/
-$ npm install coffee-script && npm install underscore
+$ npm install coffee-script && npm install underscore && npm install socket.io
 
-on the command line:
+Also requires that `zepto.js` and `underscore.js` be in `public/`
+for the HTML version.
+
+=== play
+
+the command line:
 $ coffee src/cli.coffee
 
-start a server:
+the HTML server:
 $ coffee src/server.coffee
+then, browse to 127.0.0.1:8124
 
 === next
 
-Serve up over a node HTTP server.
+Pretty graphics with Raphael.
 
 === history 
 
@@ -31,3 +40,7 @@ Basic computer AI.
 v0.0.3
 Lazy evaluation of game trees. Basic heuristics for AI game
 board rating.
+
+v0.0.4
+Vry basic node server and client interface that is still
+essentially text. Use socket.io for persistence.
