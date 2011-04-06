@@ -18,7 +18,7 @@ get_moves = (tree) ->
     tree[2] || []
 
 # Game parameter object.
-DoD = {} unless DoD?
+DoD = {}
 
 # Define some initial parameters.
 DoD.num_players = 2
@@ -60,23 +60,6 @@ gen_board = () ->
 # Return the player name for the number (0 -> a, 1 -> b, etc).
 player_letter = (num) ->
   String.fromCharCode(num + 97)
-
-# Output an ascii representation of the board.
-draw_ascii_board = (board) ->
-  bs = DoD.board_size
-  buf = []
-  for y in [0...bs]
-    buf.push("\n")
-    do (y) ->
-      for n in [0...(bs - y)]
-        buf.push("  ")
-    for x in [0...bs]
-      hex = board[x + (y * bs)]
-      buf.push(player_letter(hex[0]) + "-" + hex[1] + " ")
-  buf = buf.join("")
-
-  # Just use console.log for output now.
-  console.log(buf)
 
 # ## Rules
 
@@ -264,34 +247,6 @@ add_new_dice = (board, player, spare_dice) ->
     else
       hex
 
-
-
-# ## Playing against another human
-
-# Text-based; open up stdin.
-stdin = process.openStdin()
-
-# Begin game.
-startNewGame = () ->
-  play_vs_computer game_tree(gen_board(), 0, 0, true)
-
-# Start a play versus a human for game tree `tree`.
-play_vs_human = (tree) ->
-  print_info tree
-
-  # The third "slot" in a tree structure is a list of available
-  # moves. If there are none left, someone is a winner.
-  if _.isEmpty get_moves(tree)
-    announce_winner(tree[1])
-
-    console.log("Hit any key for a new game, or control-d to stop.")
-    stdin.once 'data', (chunk) -> 
-      startNewGame()
-
-  # If not, handle the tree.
-  else
-    handle_human(tree, play_vs_human)
-
 # Calculate the winner[s]. Loop through all the hexes and
 # tally up the score for each player. Return an array of
 # winners (more than one in case of a tie.)
@@ -310,57 +265,6 @@ winners = (board) ->
       parseInt n, 10
   )
 
-# Announce the winner.
-announce_winner = (board) ->
-  console.log("")
-  w = winners(board)
-  if w.length > 1
-    console.log("The game is a tie between", _.map(w, (n) -> player_letter(n)) )
-  else
-    console.log("The winner is", player_letter(w[0]))
-
-# ## Text interface
-
-# Print game info.
-# Remember that the `tree` data structure is [ player, board, moves ].
-print_info = (tree) ->
-  console.log "current player = ", player_letter(tree[0])
-  draw_ascii_board tree[1]
-
-# Handle input from humans. The callback is called after the user
-# has made a choice.
-handle_human = (tree, callback) ->
-  console.log("")
-  console.log("choose your move:")
-  buf = ["\n"]
-  moves = get_moves(tree)
-  for n, move of moves
-
-    # The first element of a `move` is a description of the action.
-    action = move[0] 
-    buf.push n, ". "
-
-    # If the action is an empty list, it's a passing move.
-    if _.isEmpty(action)
-      buf.push "end turn \n"
-    else
-      buf.push action[0] + " -> " + action[1] + "\n"
-  console.log(buf.join("") + "\n")
-
-  # Handle user input. Node requires here that `stdin` be non-blocking, so unlike the
-  # implementation in *Land of Lisp* we generate a callback function to run when the
-  # user makes a choice.
-  do () ->
-    handleChunk = (chunk) ->
-      selection = parseInt chunk, 10
-      if (moves[selection])
-        newTree = moves[selection][1]
-        callback(newTree)
-      else
-        console.log("unknown command.")
-        stdin.once 'data', handleChunk
-
-    stdin.once 'data', handleChunk
 
 # ## Computer AI
 
@@ -447,22 +351,13 @@ handle_computer = (tree) ->
   move = get_moves(tree)[ratings.indexOf(_.max ratings)]
   move[1]
 
-play_vs_computer = (tree) ->
-  print_info tree
-  if _.isEmpty get_moves(tree)
-    announce_winner(tree[1])
 
-    console.log("Hit any key for a new game, or control-d to stop.")
-    stdin.once 'data', (chunk) -> 
-      startNewGame()
+# Public functions.
+exports.gen_board       = gen_board
+exports.game_tree       = game_tree
+exports.get_moves       = get_moves
+exports.winners         = winners
+exports.player_letter   = player_letter
+exports.handle_computer = handle_computer
 
-  # If not, handle the tree.
-  else
-    if (tree[0] == 0)
-      handle_human(tree, play_vs_computer)
-    else
-      play_vs_computer handle_computer(tree)
-
-
-# Begin!
-startNewGame()
+exports.DoD = DoD
