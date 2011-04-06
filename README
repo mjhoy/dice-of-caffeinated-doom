@@ -10,8 +10,11 @@ along with the coffeescript and underscore libraries.
 These are easily installed with npm => http://npmjs.org/
 $ npm install coffee-script && npm install underscore
 
-then, run with the `coffee` command:
-$ coffee src/dice_of_doom.coffee
+on the command line:
+$ coffee src/cli.coffee
+
+start a server:
+$ coffee src/server.coffee
 
 === next
 
