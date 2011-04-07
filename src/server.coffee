@@ -29,6 +29,12 @@ server = http.createServer (req, res) ->
     else if req.url is '/underscore.js'
       res.writeHead 200, {'Content-Type': 'text/javascript'}
       file = './public/underscore.js'
+    else if req.url is '/backbone.js'
+      res.writeHead 200, {'Content-Type': 'text/javascript'}
+      file = './public/backbone.js'
+    else if req.url is '/raphael.js'
+      res.writeHead 200, {'Content-Type': 'text/javascript'}
+      file = './public/raphael.js'
     else
       res.writeHead 200, {'Content-Type': 'text/html'}
       file = './public/index.html'

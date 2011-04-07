@@ -1,3 +1,5 @@
 docs
 public/zepto.js
 public/underscore.js
+public/raphael.js
+public/backbone.js
