@@ -13,7 +13,8 @@
         font-size:   18px;
         font-family: Helvetica; 
       }
-      body { width: 650px; margin: 1em auto; position: relative; }
+      body { width: 670px; margin: 1em auto; position: relative; }
+      h1 { margin-bottom: 40px; text-transform: uppercase; font-size: 18px; letter-spacing: 2px; text-align: center;}
       pre {
         font-size: 1.4em;
       }
@@ -23,26 +24,19 @@
         font-weight: bold;
       }
       #status { color: #555; }
-      #rules { font-family: Helvetica; width: 200px; position: absolute; top: 75px; right: 0px; font-size: 13px; }
+      #rules { font-family: Helvetica; width: 200px; position: absolute; top: 70px; right: 0px; font-size: 13px; color: #666;}
+      #footer { margin-top: 75px; border-top: 1px solid #ccc; padding-top: 1em; font-size: 12px; color: #777; }
     </style>
   </head>
 
   <body>
-    <h1>Dice of Doom!</h1>
+    <h1>Dice of Doom</h1>
     <div id="raphael">
 
     </div>
     <div id="status">
     </div>
-    <div id="message">
-    </div>
-    <div id="pass">
-
-    </div>
     <div id="rules">
-      <p>
-        Tiles can overtake other tiles with less dice.
-      </p>
       <p>
         Click on a tile to make a move.
       </p>
@@ -51,11 +45,18 @@
         the game is over, and the player with the most dice wins.
       </p>
       <p>
-        After the first move, you can move again, or pass.
+        You receive extra dice at the end of a turn if you
+        capture enough opponent dice.
       </p>
       <p>
-        You are green. You are playing against a computer AI.
+        You are green.<br>The computer is red.
       </p>
+    </div>
+
+    <div id="footer">
+      this is <em>Land of Lisp</em>&rsquo;s Dice of Doom implemented in coffeescript / node.js.<br>
+      a project by <a href="http://mjhoy.name">michael hoy</a>.<br>
+      see on <a href="https://github.com/mjhoy/dice-of-caffeinated-doom">github</a>.
     </div>
   </body>
 </html>
