@@ -1,6 +1,6 @@
 # Requires underscore, zepto, raphael, backbone, and socket.io.
 _        = this._
-{Model, Collection, Events} = this.Backbone
+{Model} = this.Backbone
 $        = this.Zepto
 Raphael  = this.Raphael
 io       = this.io
@@ -13,49 +13,24 @@ paper = this.paper = {}
 player_letter = (num) ->
   String.fromCharCode(num + 97)
 
-# Present a list of move choices to the player and set up event handling.
+# Send the move list to the GameBoard and set up an event handler for
+# when the user chooses a move.
 handle_moves = (moves) ->
   GameBoard.set { moves: moves }
-  $container = $('#moves').html('')
-  for n, action of moves
-    $el = $('<a href="#"></a>')
-    text = n + '. '
-    if _.isEmpty(action)
-      text += "end turn"
-      end = true
-    else
-      text += action[0] + ' ~> ' + action[1]
-    $el.text(text)
-    $container.append($el)
-    $container.append($('<br>'))
-    do (n) ->
-      $el.bind 'click', () ->
-        socket.send {
-          move: n
-        }
-        if end
-          $container.html('')
-        false
+  GameBoard.bind 'makemove', (board, chosen_move) ->
+    for n, action of moves
+      if (
+        # A passing move is chosen.
+        (_.isEmpty action) and (_.isEmpty chosen_move)
+      ) or (
+        # An attacking move is chosen.
+        (action[0] is chosen_move[0]) and (action[1] is chosen_move[1])
+      )
+        socket.send { move: n }
 
-# This should go elsewhere.
-handle_player = (player) ->
-  $('#status').html(player + '\'s turn to move.')
+      # Only allow this event to be called once.
+      GameBoard.unbind 'makemove'
 
-# Draw the board.
-handle_board  = (board) ->
-  GameBoard.set { board: board }
-  bs = DoD.board_size
-  buf = []
-  for y in [0...bs]
-    buf.push("\n")
-    do (y) ->
-      for n in [0...(bs - y)]
-        buf.push("  ")
-    for x in [0...bs]
-      hex = board[x + (y * bs)]
-      buf.push(player_letter(hex[0]) + "-" + hex[1] + " ")
-  buf = buf.join("")
-  $('#world').html(buf)
 
 # ## Drawing
 
@@ -107,8 +82,24 @@ class Board extends Model
     @set { tiles: tiles }, { silent: true }
 
     @bind 'change:board', change_board
+    @bind 'change:player', change_player
     @bind 'change:moves', change_moves
     @bind 'click:tile', click_tile
+    @bind 'change:selected', change_selected
+    @bind 'change:winners', change_winners
+
+  # Get a unique list of legitimate source tiles for moves.
+  unique_sources = (moves) ->
+    srcs = _.flatten _.uniq _.map moves, (m) -> 
+      m[0] unless _.isEmpty(m)
+
+  # Get a list of every possible destination for a source from
+  # list of moves
+  destinations = (source, moves) ->
+    _.map(
+      _.filter moves, (m) -> m[0] is source
+      (m) -> m[1]
+    )
 
   # Called when the board is changed
   change_board = (model, board) ->
@@ -116,39 +107,87 @@ class Board extends Model
     for hex, n in board
       tiles[n].set { hex: hex }
 
-  change_moves = (model, moves) ->
-    srcs = _.uniq _.map moves, (m) -> 
-      if _.isEmpty(m)
-        "end" # An empty move is a turn end.
-      else
-        m[0]
-    tiles = model.get 'tiles'
-    for s in srcs
-      if s isnt "end"
-        tiles[s].set {
-          moves: _.filter moves, (m) -> m[0] is s
-        }
+  change_player = (model, player) ->
+    if not model.get('winners')
+      $('#status').html(player_letter(player) + '\'s turn...')
+      if player isnt 0 
+        $('#pass').html('Waiting...')
 
-  click_tile = (model, tile) ->
-    # To fill...
-    console.log("tile " + tile.get('pos') + " clicked!")
-        
+  change_moves = (model, moves) ->
+    model.set { selected: false }
+
+    if model.get('player') is 0
+      # See if there exists a passing moves in `moves`.
+      passing = false
+
+      for m in moves
+        if _.isEmpty m
+          passing = m
+          break
+
+      el = $('#pass')
+      if passing
+        el.html("Your move. <a href='#'>Pass this move.</a>")
+        $(el).children('a').bind 'click', () => 
+          console.log('clicked!')
+          model.trigger 'makemove', model, passing
+          $(el).children('a').unbind 'click'
+      else
+        el.html("Your move. (Can't pass.)")
+
+  change_winners = (model, winners) ->
+    w = winners
+    if w.length > 1
+      msg = "The game is a tie between " + _.map(w, (n) -> player_letter(n)).join(", ") + "."
+    else
+      msg = "The winner is " + player_letter(w[0]) + "."
+    msg += " <a href='/'>Reload for another.</a>"
+    $('#status').html(msg)
+    $('#pass').html('')
+
+  click_tile = (board, tile) ->
+    pos = tile.get 'pos'
+    moves = board.get 'moves'
+    selected = board.get 'selected'
+
+    # If a tile is currently selected, check if this is a legitimate
+    # destination tile.
+    if selected or (selected is 0)
+      dsts = destinations(selected, moves)
+      if _.include dsts, pos
+        board.set { selected: false }
+        board.trigger 'makemove', board, [ selected, pos ]
+
+    # If a tile hasn't been selected, check if this is a legitimate source.
+    else if moves
+      srcs = unique_sources(moves)
+      if _.include srcs, pos
+        board.set { selected: pos }
+
+  change_selected = (board, selected) ->
+    tiles = board.get 'tiles'
+    for t in tiles
+      pos = t.get 'pos'
+      if pos is selected
+        t.set { selected: true }
+      else
+        t.set { selected: false }
+
+
 class Tile extends Model
 
-  COLORS =  [ "red", "green" ]
+  COLORS =  [ "green", "red" ]
 
   initialize: ->
 
     paper   = @get 'paper'
-    player  = @get 'player'
     x       = @get 'x'
     y       = @get 'y'
-    pos     = @get 'pos'
     board   = @get 'board'
 
     drawn = {
       tile: paper.tile(x, y)
-      num : paper.text(x, y, pos + '' + ' x: ' + x + ' y: ' + y)
+      num : paper.text(x, y, '0')
     }
 
     for el in [ 'tile', 'num' ]
@@ -157,16 +196,23 @@ class Tile extends Model
 
     @set { drawn: drawn }
 
-    @bind 'change:player', change_player
-    @bind 'change:dice', change_dice
+    @bind 'change:hex', change_hex
+    @bind 'change:selected', change_selected
 
-  change_player = (model, player) ->
-    drawn = @get 'drawn'
-    drawn.tile.attr({fill: COLORS[@player]})
+  change_hex = (model, hex) ->
+    drawn = model.get 'drawn'
+    player = hex[0]
+    dice = hex[1]
+    drawn.tile.attr({fill: COLORS[player]})
+    drawn.num.attr({text: dice + ''})
 
-  change_dice = (model, dice) ->
-    drawn = @get 'drawn'
-    drawn.num.attr({ text: @get('dice') + ''})
+  change_selected = (model, selected) ->
+    drawn = model.get 'drawn'
+    if selected
+      drawn.tile.attr({'fill-opacity':0.3})
+    else
+      drawn.tile.attr({'fill-opacity':1.0})
+
 
   glow: ->
     @get('drawn').tile.attr({'fill-opacity':0.2})
@@ -175,27 +221,30 @@ class Tile extends Model
 # ## Socket interface
 socket = new io.Socket()
 
-socket.on 'message', (msg) ->
+socket.on 'message', (msg) =>
   if msg.DoD
     DoD = msg.DoD
+    GameBoard = new Board({ paper: this.paper, board_size: DoD.board_size })
+    this.GameBoard = GameBoard
   if msg.board
-    handle_board(msg.board)
+    GameBoard.set { board: msg.board }
   if msg.player
-    handle_player(msg.player)
+    GameBoard.set { player: parseInt(msg.player, 10) }
   if msg.moves
     handle_moves(msg.moves)
   if msg.message
     $('#message').text(msg.message)
+  if msg.winners
+    GameBoard.set { winners: msg.winners }
 
 socket.on 'disconnect', () ->
   $('#status').text("Disconnected.")
 
 # ## Document ready.
 $ () =>
-  paper = Raphael("raphael", 600, 600)
+  paper = Raphael("raphael", 420, 200)
   this.paper = paper
   socket.connect()
-  GameBoard = new Board({ paper: this.paper, board_size: 3 })
 
 this.socket = socket
 this.Board = Board

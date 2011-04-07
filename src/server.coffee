@@ -60,9 +60,7 @@ socket.on 'connection', (client) ->
   
   # Handle client actions.
   client.on 'message', (msg) ->
-    console.log('message: ' + msg)
   client.on 'disconnect', ->
-    console.log("disconnect!")
 
   # Start the game.
   play_vs_computer tree, client
@@ -78,10 +76,11 @@ client_moves = (moves) ->
 # Send game information to the client.
 print_info = (tree, client) ->
   board = tree[1]
-  player = player_letter tree[0]
+  player = tree[0]
   client.send {
     board:  board
-    player: player
+    # Can't send a 0, make a string.
+    player: player + ''
   }
 
 # Run a turn.
@@ -100,9 +99,6 @@ play_vs_computer = (tree, client) ->
 handle_web_computer = (tree, client) ->
   setTimeout(
     () ->
-      client.send {
-        message: player_letter(tree[0]) + ' moved.'
-      }
       play_vs_computer handle_computer(tree), client
     1000
   )
@@ -123,10 +119,6 @@ handle_web_human = (tree, client) ->
 # Announce winner. Some of this should go in client.coffee.
 announce_winner = (board, client) ->
   w = winners(board)
-  if w.length > 1
-    msg = "The game is a tie between " + _.map(w, (n) -> player_letter(n)).join(", ")
-  else
-    msg = "The winner is " + player_letter(w[0])
   client.send {
-    message: msg
+    winners: w
   }

@@ -11,9 +11,9 @@
     <style type="text/css">
       html {
         font-size:   18px;
-        font-family: 'Gill Sans';
+        font-family: Helvetica; 
       }
-      body { width: 600px; margin: 1em auto }
+      body { width: 650px; margin: 1em auto; position: relative; }
       pre {
         font-size: 1.4em;
       }
@@ -22,24 +22,40 @@
         text-decoration: none;
         font-weight: bold;
       }
+      #status { color: #555; }
+      #rules { font-family: Helvetica; width: 200px; position: absolute; top: 75px; right: 0px; font-size: 13px; }
     </style>
   </head>
 
   <body>
     <h1>Dice of Doom!</h1>
-
-    <pre id="world">
-
-    </pre>
-    <pre id="status">
-    </pre>
-    <pre id="message">
-    </pre>
-    <div id="moves">
-
-    </div>
     <div id="raphael">
 
+    </div>
+    <div id="status">
+    </div>
+    <div id="message">
+    </div>
+    <div id="pass">
+
+    </div>
+    <div id="rules">
+      <p>
+        Tiles can overtake other tiles with less dice.
+      </p>
+      <p>
+        Click on a tile to make a move.
+      </p>
+      <p>
+        You must make a move on the first turn. If you can't,
+        the game is over, and the player with the most dice wins.
+      </p>
+      <p>
+        After the first move, you can move again, or pass.
+      </p>
+      <p>
+        You are green. You are playing against a computer AI.
+      </p>
     </div>
   </body>
 </html>
