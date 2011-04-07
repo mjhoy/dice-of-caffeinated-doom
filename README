@@ -1,6 +1,7 @@
 == Dice of Doom
 
 Implementing the game from *Land of Lisp* in JS/Coffeescript/Node
+pretty source code at: http://mjhoy.github.com/dice-of-caffeinated-doom/dice_of_doom.html
 
 === install
 
