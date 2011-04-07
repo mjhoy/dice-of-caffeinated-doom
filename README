@@ -13,8 +13,14 @@ and the following libraries:
 These are easily installed with npm => http://npmjs.org/
 $ npm install coffee-script && npm install underscore && npm install socket.io
 
-Also requires that `zepto.js` and `underscore.js` be in `public/`
-for the HTML version.
+Also requires that 
+
+zepto.js
+underscore.js 
+raphael.js
+backbone.js
+
+all be present in public/ for the HTML version.
 
 === play
 
@@ -27,7 +33,7 @@ then, browse to 127.0.0.1:8124
 
 === next
 
-Pretty graphics with Raphael.
+Prettier graphics. More than 1 opponent. More interesting rules.
 
 === history 
 
@@ -44,3 +50,7 @@ board rating.
 v0.0.4
 Vry basic node server and client interface that is still
 essentially text. Use socket.io for persistence.
+
+v0.0.5
+Slightly boring Raphael graphics. Use backbone.js for 
+models and event handling on the client.
