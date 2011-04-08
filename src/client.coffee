@@ -232,7 +232,7 @@ class Tile extends Model
       drawn.tile.animate({'fill-opacity':1.0}, 50)
 
 # ## Socket interface
-socket = new io.Socket()
+socket = new io.Socket(document.domain, { port: 9989 })
 
 # Receive a message from the server. 
 # Kind of a control flow mess right now, needs cleanup.

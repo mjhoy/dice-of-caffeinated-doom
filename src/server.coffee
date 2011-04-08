@@ -14,8 +14,8 @@ _            = require 'underscore'
 } = require './dice_of_doom.coffee'
 
 
-# ## A really silly server
-server = http.createServer (req, res) ->
+# ## Asset server
+staticServer = http.createServer (req, res) ->
 
   #  Compile the client coffeescript.
   if req.url is '/client.js'
@@ -41,13 +41,22 @@ server = http.createServer (req, res) ->
     fs.readFile file, (status, data) ->
       res.end data
 
-server.listen 8124, "127.0.0.1"
+staticServer.listen 8124, "127.0.0.1"
 console.log "Server running at 127.0.0.1:8124"
+
+# ## Socket server
+
+socketServer = http.createServer (req, res) ->
+  res.writeHead 200, { 'Content-Type': 'text/plain' }
+  res.end "Socket server up."
+
+socketServer.listen 9989
+
 
 # ## Socket interface
 
 # Socket for handling game client connections.
-socket = io.listen(server)
+socket = io.listen(socketServer)
 
 socket.on 'connection', (client) ->
 
