@@ -51,7 +51,7 @@ class Board extends Model
     tiles = []
     bs = @get 'board_size'
     xoffset = bs * 50 + 10
-    yoffset = 80
+    yoffset = 20 + (DoD.max_dice * 20)
 
     for y in [0...bs]
       for x in [0...bs]
@@ -176,7 +176,7 @@ class Board extends Model
 # ### The tile
 class Tile extends Model
 
-  COLORS =  [ "green", "red" ]
+  COLORS =  [ "green", "red", "blue", "yellow" ]
 
   initialize: ->
 
@@ -213,15 +213,47 @@ class Tile extends Model
     # Set the tile color.
     drawn.tile.attr({fill: COLORS[player]})
 
+    tileAbove = tile_above(model, board)
+    tileBelow = tile_below(model, board)
+
     # [Re]draw the dice.
     _.each(drawn.dice, (d) -> d.remove()) if drawn.dice
+    console.log("tile #{model.get 'pos'} drawing #{dice} dice")
     drawn.dice = []
     for n in [0...dice]
       die = paper.die(x, (y - (n * 20) + 10))
+
+      # Position the drawn object correctly: behind those in front of it,
+      # in front of those behind it, and in front of the die stacked 
+      # below it.
+      if tileAbove and tileAbove.get('drawn').dice
+        die.insertBefore(tileAbove.get('drawn').dice[0])
+      if tileBelow and tileBelow.get('drawn').dice
+        d = tileBelow.get('drawn').dice
+        die.insertAfter(d[d.length - 1])
+      die.insertAfter(lastDie) if lastDie
+
       die.attr({fill: COLORS[player]})
       die.click (e) =>
         board.trigger 'click:tile', board, this
       drawn.dice.push die
+      lastDie = die
+
+  tile_above = (model, board) ->
+    pos = model.get 'pos' 
+    upPos = pos - DoD.board_size
+    if upPos >= 0
+      board.get('tiles')[upPos]
+    else
+      null
+
+  tile_below = (model, board) ->
+    pos = model.get 'pos' 
+    downPos = pos + DoD.board_size
+    if downPos < (DoD.board_size * DoD.board_size)
+      board.get('tiles')[downPos]
+    else
+      null
 
   # Fade in or out the tile if it's been selected or deselected.
   change_selected = (model, selected) ->
@@ -276,7 +308,7 @@ socket.on 'disconnect', () ->
 # ## Document ready. 
 # Set up the Raphael paper object and connect.
 $ () =>
-  paper = Raphael("raphael", 720, 300)
+  paper = Raphael("raphael", 720, 360)
   this.paper = paper
   socket.connect()
 
