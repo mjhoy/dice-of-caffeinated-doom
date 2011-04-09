@@ -276,7 +276,7 @@ socket.on 'disconnect', () ->
 # ## Document ready. 
 # Set up the Raphael paper object and connect.
 $ () =>
-  paper = Raphael("raphael", 420, 240)
+  paper = Raphael("raphael", 720, 300)
   this.paper = paper
   socket.connect()
 

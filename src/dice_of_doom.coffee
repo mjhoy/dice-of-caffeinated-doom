@@ -21,11 +21,11 @@ get_moves = (tree) ->
 DoD = {}
 
 # Define some initial parameters.
-DoD.num_players = 2
-DoD.max_dice = 3
-DoD.board_size = 3
+DoD.num_players = 4
+DoD.max_dice = 5
+DoD.board_size = 5
 DoD.num_hexes = (DoD.board_size * DoD.board_size)
-DoD.ai_level = 4
+DoD.ai_level = 2
 
 # ## A helper function
 
