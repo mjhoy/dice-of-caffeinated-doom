@@ -4,12 +4,13 @@ fs           = require 'fs'
 coffeescript = require 'coffee-script'
 _            = require 'underscore'
 {
-  gen_board       : gen_board
-  game_tree       : game_tree
-  get_moves       : get_moves
-  winners         : winners
-  player_letter   : player_letter
-  handle_computer : handle_computer
+  gen_board          : gen_board
+  game_tree          : game_tree
+  get_moves          : get_moves
+  winners            : winners
+  player_letter      : player_letter
+  handle_computer    : handle_computer
+  pick_chance_branch : pick_chance_branch
   DoD             : DoD
 } = require './dice_of_doom.coffee'
 
@@ -122,7 +123,7 @@ handle_web_human = (tree, client) ->
   client.removeAllListeners 'message'
   client.on 'message', (msg) ->
     if msg.move
-      newTree = moves[parseInt(msg.move,10)][1]
+      newTree = pick_chance_branch tree[1], moves[parseInt(msg.move,10)]
       play_vs_computer newTree, client
 
 # Announce winner. Some of this should go in client.coffee.

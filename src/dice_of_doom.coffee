@@ -166,8 +166,7 @@ attacking_moves = (board, cur_player, spare_dice) ->
             # of the attack.
             [ src, dst ]
 
-            # Now construct the new game tree that would result from
-            # the attack.
+            # Construct the game tree that would result from a successful attack.
             game_tree(
 
               # Call the `board_attack` function to change the board
@@ -188,6 +187,22 @@ attacking_moves = (board, cur_player, spare_dice) ->
 
               # It's still the attacker's move, so it can't be the
               # first move.
+              false
+            )
+
+            # Construct the game tree that would result from a failed attack.
+            # Exactly the same as the above game tree except we call
+            # `board_attack_fail` instead.
+            game_tree(
+              board_attack_fail(
+                board
+                cur_player
+                src
+                dst
+                dice(src)
+              )
+              cur_player
+              (spare_dice + dice(dst))
               false
             )
           ]
@@ -229,6 +244,42 @@ board_attack = (board, player, src, dst, dice) ->
     # Otherwise, the board is unchanged.
     else
       hex
+
+# A failed attack move.
+board_attack_fail = (board, player, src, dst, dice) ->
+  for index, hex of board
+    n = parseInt index, 10
+
+    # The source of the attack is left with one die.
+    if n is src
+      [ player, 1 ]
+
+    # Otherwise, the board is unchanged.
+    else
+      hex
+
+# Roll the dice
+roll_dice = (diceNum) ->
+  _.inject(
+    [0...diceNum]
+    (a, b) -> a + randInt(6)
+    0
+  )
+
+# Make a roll, one pile of dice against another, see if it wins.
+roll_against = (srcDice, dstDice) ->
+  (roll_dice srcDice) > (roll_dice dstDice)
+
+# Rolling the dice means picking a “chance” branch on a move,
+# based on the outcome of the roll of the dice.
+pick_chance_branch = (board, move) ->
+  [src, dst] = move[0]
+  if !src or roll_against(board[src][1], board[dst][1])
+    # This is a passing move, or the attack succeeded.
+    move[1]
+  else
+    # The attack failed.
+    move[2]
 
 # ### Reinforcements
 
@@ -349,15 +400,16 @@ handle_computer = (tree) ->
   player = tree[0]
   ratings = get_ratings limit_tree_depth(tree, DoD.ai_level), player
   move = get_moves(tree)[ratings.indexOf(_.max ratings)]
-  move[1]
+  pick_chance_branch tree[1], move
 
 
 # Public functions.
-exports.gen_board       = gen_board
-exports.game_tree       = game_tree
-exports.get_moves       = get_moves
-exports.winners         = winners
-exports.player_letter   = player_letter
-exports.handle_computer = handle_computer
+exports.gen_board          = gen_board
+exports.game_tree          = game_tree
+exports.get_moves          = get_moves
+exports.winners            = winners
+exports.player_letter      = player_letter
+exports.handle_computer    = handle_computer
+exports.pick_chance_branch = pick_chance_branch
 
 exports.DoD = DoD
