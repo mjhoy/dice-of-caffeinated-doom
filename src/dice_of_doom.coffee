@@ -65,6 +65,10 @@ player_letter = (num) ->
 
 # ### The game tree
 
+# Helper functions to get the player and dice data.
+player = (pos, board) -> board[pos][0]
+dice   = (pos, board) -> board[pos][1]
+
 # In LoL a game tree is generated recursively with all possible
 # moves. The "tree" is an array composed of three parts: the
 # player whose turn it is, the board, and an array of possible
@@ -143,9 +147,6 @@ add_passing_move = (board, player, spare_dice, first_move, moves) ->
 # opponents' dice.)
 attacking_moves = (board, cur_player, spare_dice) ->
 
-  # Helper functions to get the player and dice data.
-  player = (pos) -> board[pos][0]
-  dice   = (pos) -> board[pos][1]
 
   # We will return the `moves` array at the end, fully populated.
   moves = []
@@ -154,9 +155,9 @@ attacking_moves = (board, cur_player, spare_dice) ->
   # be owned by `cur_player`, and the destination must not. The destination
   # tile must also be neighboring; we ensure this with the `neighbors` function.
   for src in [0...DoD.num_hexes]
-    if cur_player is player(src)
+    if cur_player is player(src, board)
       for dst in neighbors(src)
-        if (cur_player isnt player(dst)) and (dice(src) > dice(dst))
+        if (cur_player isnt player(dst, board)) and (dice(src, board) > dice(dst, board))
 
           # This attack is legitimate for the given tile. Create the move.
           move = [
@@ -176,14 +177,14 @@ attacking_moves = (board, cur_player, spare_dice) ->
                 cur_player
                 src
                 dst
-                dice(src)
+                dice(src, board)
               )
 
               # Still the current player's move.
               cur_player
 
               # Add the number of dice destroyed to the spare pile.
-              (spare_dice + dice(dst))
+              (spare_dice + dice(dst, board))
 
               # It's still the attacker's move, so it can't be the
               # first move.
@@ -199,10 +200,10 @@ attacking_moves = (board, cur_player, spare_dice) ->
                 cur_player
                 src
                 dst
-                dice(src)
+                dice(src, board)
               )
               cur_player
-              (spare_dice + dice(dst))
+              (spare_dice + dice(dst, board))
               false
             )
           ]
