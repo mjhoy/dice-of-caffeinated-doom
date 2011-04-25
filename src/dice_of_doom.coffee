@@ -291,7 +291,9 @@ pick_chance_branch = (board, move) ->
 # as a turn progresses; it increases as a player captures enemy dice.
 add_new_dice = (board, player, spare_dice) ->
   # Keep track of remaining dice as we give them out.
-  remaining_dice = spare_dice
+  # The `spare_dice` parameter is no longer used. A player receives
+  # dice based on the largest cluster of owned tiles.
+  remaining_dice = largest_cluster_size board, player
   for hex in board
     cur_player = hex[0]
     cur_dice = hex[1]
@@ -319,6 +321,54 @@ winners = (board) ->
     (n) ->
       parseInt n, 10
   )
+
+# Return a list of tiles owned by `player` connected in a
+# cluster to the tile at `pos`.
+get_connected = (board, player, pos) ->
+
+  # Helper functions.
+
+  # See if `pos` is owned by the player and not already counted. If so,
+  # check its neighbors.
+  check_pos = (pos, visited) ->
+    if get_player(pos, board) is player and not _.include(visited, pos)
+      check_neighbors neighbors(pos), [pos].concat(visited) 
+    else
+      visited
+
+  # Check the positions of the neighbors in `lst`.
+  check_neighbors = (lst, visited) ->
+    if _.any lst
+      check_neighbors(
+        lst.slice 1, lst.length
+        check_pos lst[0], visited
+      )
+    else
+      visited
+
+  
+  check_pos pos, []
+
+# Find the largest cluster of dice for a given player.
+largest_cluster_size = (board, player) ->
+
+  # Private recursive function.
+  f = (pos, visited, best) ->
+    unless pos < DoD.num_hexes
+      # Finished: return the best result.
+      best
+    else
+      if get_player(pos, board) is player and not _.include visited, pos
+        cluster = get_connected board, player, pos
+        size = cluster.length
+        if size > best
+          f (pos + 1), (visited.concat cluster), size
+        else
+          f (pos + 1), (visited.concat cluster), best
+      else
+        f (pos + 1), visited, best
+  f 0, [], 0
+
 
 # ## Computer AI
 
