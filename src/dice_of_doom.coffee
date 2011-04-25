@@ -10,12 +10,6 @@ _ = require 'underscore'
 # Lazy evaluation functions.
 { lazy: lazy, force: force } = require './lazy'
 
-# The moves in a tree may be lazily evaluated; force in this case.
-get_moves = (tree) ->
-  if _.isFunction tree[2]
-    force tree[2]
-  else
-    tree[2] || []
 
 # Game parameter object.
 DoD = {}
@@ -70,6 +64,13 @@ get_player = (pos, board) -> board[pos][0]
 get_dice   = (pos, board) -> 
   board[pos][1]
 
+# The moves in a tree may be lazily evaluated; force in this case.
+get_moves = (tree) ->
+  if _.isFunction tree[2]
+    force tree[2]
+  else
+    tree[2] || []
+
 # In LoL a game tree is generated recursively with all possible
 # moves. The "tree" is an array composed of three parts: the
 # player whose turn it is, the board, and an array of possible
@@ -81,7 +82,8 @@ game_tree = (board, player, spare_dice, first_move) ->
     player
     board
 
-    # The `moves` array is evaluated lazily.
+    # The `moves` array is evaluated lazily. See
+    # [lazy.coffee](lazy.html) for the implementation of `lazy`.
     lazy () -> 
       add_passing_move( 
         board 
@@ -260,7 +262,7 @@ board_attack_fail = (board, player, src, dst, dice) ->
     else
       hex
 
-# Roll the dice
+# Roll the dice.
 roll_dice = (diceNum) ->
   _.inject(
     [0...diceNum]
@@ -268,7 +270,7 @@ roll_dice = (diceNum) ->
     0
   )
 
-# Make a roll, one pile of dice against another, see if it wins.
+# Make a roll, one pile of dice against another; see if it wins.
 roll_against = (srcDice, dstDice) ->
   (roll_dice srcDice) > (roll_dice dstDice)
 
@@ -317,7 +319,6 @@ winners = (board) ->
     (n) ->
       parseInt n, 10
   )
-
 
 # ## Computer AI
 
@@ -374,6 +375,9 @@ limit_tree_depth = (tree, depth) ->
       else
         _.map get_moves(tree), (move) ->
           [].concat(
+            # Rebuild the move, calling `limit_tree_depth` recursively.
+            # A move is composed of a description, and one or two game trees
+            # that result (two for an attack, either succeeding or failing).
             [ move[0] ]
             _.map move.slice(1, move.length), (chance_node) ->
               limit_tree_depth chance_node, (depth - 1)
