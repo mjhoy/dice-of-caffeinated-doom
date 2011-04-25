@@ -34,7 +34,7 @@ then, browse to 127.0.0.1:8124
 
 === next
 
-Prettier graphics. More than 1 opponent. More interesting rules.
+Better graphics. Indication of dice rolls. Multiplayer?
 
 === history 
 
@@ -55,3 +55,8 @@ essentially text. Use socket.io for persistence.
 v0.0.5
 Slightly boring Raphael graphics. Use backbone.js for 
 models and event handling on the client.
+
+v0.0.6
+More complex game rules. Multiple computer players.
+Chance (dice-rolling) introduced, although no interface
+yet.
