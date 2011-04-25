@@ -66,8 +66,9 @@ player_letter = (num) ->
 # ### The game tree
 
 # Helper functions to get the player and dice data.
-player = (pos, board) -> board[pos][0]
-dice   = (pos, board) -> board[pos][1]
+get_player = (pos, board) -> board[pos][0]
+get_dice   = (pos, board) -> 
+  board[pos][1]
 
 # In LoL a game tree is generated recursively with all possible
 # moves. The "tree" is an array composed of three parts: the
@@ -155,9 +156,9 @@ attacking_moves = (board, cur_player, spare_dice) ->
   # be owned by `cur_player`, and the destination must not. The destination
   # tile must also be neighboring; we ensure this with the `neighbors` function.
   for src in [0...DoD.num_hexes]
-    if cur_player is player(src, board)
+    if cur_player is get_player(src, board)
       for dst in neighbors(src)
-        if (cur_player isnt player(dst, board)) and (dice(src, board) > dice(dst, board))
+        if (cur_player isnt get_player(dst, board)) and (get_dice(src, board) > get_dice(dst, board))
 
           # This attack is legitimate for the given tile. Create the move.
           move = [
@@ -177,14 +178,14 @@ attacking_moves = (board, cur_player, spare_dice) ->
                 cur_player
                 src
                 dst
-                dice(src, board)
+                get_dice(src, board)
               )
 
               # Still the current player's move.
               cur_player
 
               # Add the number of dice destroyed to the spare pile.
-              (spare_dice + dice(dst, board))
+              (spare_dice + get_dice(dst, board))
 
               # It's still the attacker's move, so it can't be the
               # first move.
@@ -200,10 +201,10 @@ attacking_moves = (board, cur_player, spare_dice) ->
                 cur_player
                 src
                 dst
-                dice(src, board)
+                get_dice(src, board)
               )
               cur_player
-              (spare_dice + dice(dst, board))
+              (spare_dice + get_dice(dst, board))
               false
             )
           ]
@@ -275,7 +276,7 @@ roll_against = (srcDice, dstDice) ->
 # based on the outcome of the roll of the dice.
 pick_chance_branch = (board, move) ->
   [src, dst] = move[0]
-  if !src or roll_against(board[src][1], board[dst][1])
+  if !src? or roll_against(board[src][1], board[dst][1])
     # This is a passing move, or the attack succeeded.
     move[1]
   else
@@ -320,6 +321,18 @@ winners = (board) ->
 
 # ## Computer AI
 
+# Dice odds: the chance that an attack will succeed. The columns of
+# the multi-dimensional array represent the # of attacking dice; the
+# rows defending. Used to calculate the rating for attack moves.
+DICE_ODDS = 
+  [ 
+    [ 0.84, 0.97, 1.00, 1.00 ]
+    [ 0.44, 0.78, 0.94, 0.99 ]
+    [ 0.15, 0.45, 0.74, 0.91 ]
+    [ 0.04, 0.19, 0.46, 0.72 ]
+    [ 0.01, 0.06, 0.22, 0.46 ]
+  ]
+
 # Rate the position for a player and a given tree.
 rate_position = (tree, player) ->
   moves = get_moves(tree)
@@ -338,7 +351,15 @@ rate_position = (tree, player) ->
 
 get_ratings = (tree, player) ->
   _.map get_moves(tree), (move) ->
-    rate_position move[1], player
+    [src, dst] = move[0]
+    board = tree[1]
+    if src?
+      odds = DICE_ODDS[board[dst][1] - 1][board[src][1] - 2]
+      ratings = (odds * rate_position(move[1], player)) +
+        ((1 - odds) * rate_position(move[2], player))
+      ratings
+    else
+      rate_position move[1], player
 
 # To handle larger game boards, we need to limit how far ahead the
 # computer looks. Then the "unseen" nodes will not need to be
@@ -352,10 +373,11 @@ limit_tree_depth = (tree, depth) ->
         []
       else
         _.map get_moves(tree), (move) ->
-          [
-            move[0]
-            limit_tree_depth move[1], (depth - 1)
-          ]
+          [].concat(
+            [ move[0] ]
+            _.map move.slice(1, move.length), (chance_node) ->
+              limit_tree_depth chance_node, (depth - 1)
+          )
   ]
 
 # Because we limit the game tree for the computer, the leaf nodes are
