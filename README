@@ -1,13 +1,15 @@
 == Dice of Doom
 
-An implementing the game found in *Land of Lisp* in coffeescript and node.js to
-run in the browser.
+An implementation of the game found in *Land of Lisp* in coffeescript and
+node.js, to run in the browser.
 
 (Land of Lisp, by Conrad Barski, is available at: http://landoflisp.com/)
 
-This implementation uses a server/client architecture. A client connects to a
-node.js/websockets server, which tells the client about the game board. The
-client sends the user's moves as messages, and the server responds with the
+This implementation uses a client/server architecture. A client connects to a
+node.js server over websockets. The server tells the client about the game
+board, and the client draws it.
+
+The client sends the user's moves as messages, and the server responds with the
 result of the move. On the computer's turn, the computer uses simple AI to
 calculate moves and sends them to the client.
 
