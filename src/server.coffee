@@ -14,7 +14,6 @@ _            = require 'underscore'
   DoD             : DoD
 } = require './dice_of_doom.coffee'
 
-
 # ## Asset server
 staticServer = http.createServer (req, res) ->
 
@@ -59,13 +58,14 @@ socketServer.listen 9989
 # Socket for handling game client connections.
 socket = io.listen(socketServer)
 
-socket.on 'connection', (client) ->
+
+socket.sockets.on 'connection', (client) ->
 
   # Client connected. Start a new game!
   tree = game_tree(gen_board(), 0, 0, true)
 
   # Send the client game constants.
-  client.send({DoD: DoD})
+  client.json.send({DoD: DoD})
 
   
   # Handle client actions.
@@ -87,7 +87,7 @@ client_moves = (moves) ->
 print_info = (tree, client) ->
   board = tree[1]
   player = tree[0]
-  client.send {
+  client.json.send {
     board:  board
     # Can't send a 0, make a string.
     player: player + ''
@@ -117,7 +117,7 @@ handle_web_computer = (tree, client) ->
 # possible moves.
 handle_web_human = (tree, client) ->
   moves = get_moves(tree)
-  client.send {
+  client.json.send {
     moves: client_moves(moves)
   }
   client.removeAllListeners 'message'
@@ -129,6 +129,6 @@ handle_web_human = (tree, client) ->
 # Announce winner. Some of this should go in client.coffee.
 announce_winner = (board, client) ->
   w = winners(board)
-  client.send {
+  client.json.send {
     winners: w
   }

@@ -119,7 +119,6 @@ class Board extends Model
       if passing
         el.html("Your move. <a href='#'>Pass this move.</a>")
         $(el).children('a').bind 'click', () => 
-          console.log('clicked!')
           model.trigger 'makemove', model, passing
           $(el).children('a').unbind 'click'
       else
@@ -218,7 +217,6 @@ class Tile extends Model
 
     # [Re]draw the dice.
     _.each(drawn.dice, (d) -> d.remove()) if drawn.dice
-    console.log("tile #{model.get 'pos'} drawing #{dice} dice")
     drawn.dice = []
     for n in [0...dice]
       die = paper.die(x, (y - (n * 20) + 10))
@@ -263,54 +261,53 @@ class Tile extends Model
     else
       drawn.tile.animate({'fill-opacity':1.0}, 50)
 
-# ## Socket interface
-socket = new io.Socket(document.domain, { port: 9989 })
-
-# Receive a message from the server. 
-# Kind of a control flow mess right now, needs cleanup.
-socket.on 'message', (msg) =>
-
-  if msg.DoD
-    DoD = msg.DoD
-    GameBoard = new Board({ paper: this.paper, board_size: DoD.board_size })
-    this.GameBoard = GameBoard
-
-  if msg.board
-    GameBoard.set { board: msg.board }
-
-  if msg.player
-    GameBoard.set { player: parseInt(msg.player, 10) }
-
-  if msg.moves
-    moves = msg.moves
-    GameBoard.set { moves: moves }
-    GameBoard.bind 'makemove', (board, chosen_move) ->
-      for n, action of moves
-        if (
-          # A passing move is chosen.
-          (_.isEmpty action) and (_.isEmpty chosen_move)
-        ) or (
-          # An attacking move is chosen.
-          (action[0] is chosen_move[0]) and (action[1] is chosen_move[1])
-        )
-          socket.send { move: n }
-
-        # Only allow this event to be called once.
-        GameBoard.unbind 'makemove'
-
-  if msg.winners
-    GameBoard.set { winners: msg.winners }
-
-# If the server disconnects.
-socket.on 'disconnect', () ->
-  $('#status').text("Disconnected.")
 
 # ## Document ready. 
 # Set up the Raphael paper object and connect.
 $ () =>
   paper = Raphael("raphael", 720, 360)
   this.paper = paper
-  socket.connect()
 
-this.socket = socket
+  # ## Socket interface
+  socket = window.socket = io.connect(document.domain, {port: 9989 })
+
+  # Receive a message from the server.
+  # Kind of a control flow mess right now, needs cleanup.
+  socket.on 'message', (msg) =>
+
+    if msg.DoD
+      DoD = msg.DoD
+      GameBoard = new Board({ paper: paper, board_size: DoD.board_size })
+      this.GameBoard = GameBoard
+
+    if msg.board
+      GameBoard.set { board: msg.board }
+
+    if msg.player
+      GameBoard.set { player: parseInt(msg.player, 10) }
+
+    if msg.moves
+      moves = msg.moves
+      GameBoard.set { moves: moves }
+      GameBoard.bind 'makemove', (board, chosen_move) ->
+        for n, action of moves
+          if (
+            # A passing move is chosen.
+            (_.isEmpty action) and (_.isEmpty chosen_move)
+          ) or (
+            # An attacking move is chosen.
+            (action[0] is chosen_move[0]) and (action[1] is chosen_move[1])
+          )
+            socket.json.send { move: n }
+
+          # Only allow this event to be called once.
+          GameBoard.unbind 'makemove'
+
+    if msg.winners
+      GameBoard.set { winners: msg.winners }
+
+  # If the server disconnects.
+  socket.on 'disconnect', () ->
+    $('#status').text("Disconnected.")
+
 this.Board = Board

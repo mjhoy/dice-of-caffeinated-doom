@@ -9,7 +9,7 @@ Requires node => http://nodejs.org/
 and the following libraries:
   coffee-script
   underscore
-  socket.io
+  socket.io (version 0.7+)
 
 These are easily installed with npm => http://npmjs.org/
 
