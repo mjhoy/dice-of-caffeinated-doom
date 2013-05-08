@@ -23,6 +23,8 @@ backbone.js
 
 all be present in public/ for the HTML version.
 
+Run `$ make` to download these libraries.
+
 === play
 
 the command line:
