@@ -3,3 +3,5 @@ public/zepto.js
 public/underscore.js
 public/raphael.js
 public/backbone.js
+
+node_modules

@@ -12,7 +12,8 @@ and the following libraries:
   socket.io
 
 These are easily installed with npm => http://npmjs.org/
-$ npm install coffee-script && npm install underscore && npm install socket.io
+
+$ npm install coffee-script underscore socket.io
 
 Also requires that 
 
@@ -27,11 +28,14 @@ Run `$ make` to download these libraries.
 
 === play
 
+Assuming that npm has installed into ./node_modules/...
+
 the command line:
-$ coffee src/cli.coffee
+$ node_modules/coffee-script/bin/coffee src/cli.coffee
 
 the HTML server:
-$ coffee src/server.coffee
+$ node_modules/coffee-script/bin/coffee src/server.coffee
+
 then, browse to 127.0.0.1:8124
 
 === next
